@@ -1,6 +1,9 @@
 import asyncio
 import curses
+import random
 import time
+
+from functools import partial
 
 TIC_TIMEOUT = 0.1
 
@@ -27,13 +30,17 @@ async def blink(canvas: curses.window, row, column, symbol='*'):
 def draw(canvas: curses.window) -> None:
     curses.curs_set(False)
     canvas.border()
-    coroutines = [
-        blink(canvas, row=5, column=5),
-        blink(canvas, row=5, column=10),
-        blink(canvas, row=5, column=15),
-        blink(canvas, row=5, column=20),
-        blink(canvas, row=5, column=25),
-    ]
+    star_symbols = "+*.:"
+    window_height, window_width = canvas.getmaxyx()
+
+    coroutines = []
+    for _ in range(random.randint(50, 200)):
+        coroutines.append(blink(
+            canvas,
+            row=random.randint(5, window_height - 5),
+            column=random.randint(5, window_width - 5),
+            symbol=random.choice(star_symbols),
+        ))
     while True:
         for coroutine in coroutines:
             coroutine.send(None)
