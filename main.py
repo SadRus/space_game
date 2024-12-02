@@ -3,12 +3,12 @@ import curses
 import random
 import time
 
-from functools import partial
-
 TIC_TIMEOUT = 0.1
 
 
-async def blink(canvas: curses.window, row, column, symbol='*'):
+async def blink(canvas: curses.window, row: int, column: int, symbol='*'):
+    for _ in range(random.randint(10, 20)):
+        await asyncio.sleep(0)
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
         for _ in range(20):
@@ -34,7 +34,7 @@ def draw(canvas: curses.window) -> None:
     window_height, window_width = canvas.getmaxyx()
 
     coroutines = []
-    for _ in range(random.randint(50, 200)):
+    for _ in range(random.randint(70, 130)):
         coroutines.append(blink(
             canvas,
             row=random.randint(5, window_height - 5),
