@@ -6,7 +6,8 @@ import time
 from curses_tools import draw_frame, get_frame_size, read_controls
 from itertools import cycle
 
-ROCKET_SPEED = 1
+ROCKET_ROWS_SPEED = 1
+ROCKET_COLUMNS_SPEED = 1
 STARS_COUNT_MIN = 80
 STARS_COUNT_MAX = 130
 STAR_SYMBOLS = '+*.:'
@@ -47,56 +48,36 @@ def animate_stars(canvas, rows, columns, star_symbols):
     return coroutines
 
 
-async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
-    """Display animation of gun shot, direction and speed can be specified."""
-
-    row, column = start_row, start_column
-
-    canvas.addstr(round(row), round(column), '*')
-    await asyncio.sleep(0)
-
-    canvas.addstr(round(row), round(column), 'O')
-    await asyncio.sleep(0)
-    canvas.addstr(round(row), round(column), ' ')
-
-    row += rows_speed
-    column += columns_speed
-
-    symbol = '-' if columns_speed else '|'
-
-    rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
-
-    curses.beep()
-
-    while 0 < row < max_row and 0 < column < max_column:
-        canvas.addstr(round(row), round(column), symbol)
-        await asyncio.sleep(0)
-        canvas.addstr(round(row), round(column), ' ')
-        row += rows_speed
-        column += columns_speed
-
-
 async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
-    row, column = start_row, start_column
+    canvas_min_row, canvas_min_column = canvas.getbegyx()
+    canvas_max_row, canvas_max_column = canvas.getmaxyx()
 
-    # rows, columns = canvas.getmaxyx()
-    # max_row, max_column = rows - 1, columns - 1
-    # rocket_frame_size = get_frame_size(rocket_frames[0])
+    rocket_row, rocket_column = start_row, start_column
+    rocket_frame_rows, rocket_frame_columns = get_frame_size(rocket_frames[0])
 
-    row_delta = column_delta = 0
-    # while 0 < row < max_row and 0 < column < max_column:
+    rows_speed = columns_speed = 0
     for rocket_frame in cycle(rocket_frames):
-        row_delta, column_delta, _ = read_controls(canvas)
-        row += row_delta * ROCKET_SPEED
-        column += column_delta * ROCKET_SPEED
+        draw_frame(canvas, round(rocket_row), round(rocket_column), rocket_frame)
+        for _ in range(2):
+            await asyncio.sleep(0)
+        draw_frame(canvas, round(rocket_row), round(rocket_column), rocket_frame, negative=True)
 
-        draw_frame(canvas, round(row), round(column), rocket_frame)
-        await asyncio.sleep(0)
-        draw_frame(canvas, round(row), round(column), rocket_frame, negative=True)
+        rows_speed, columns_speed, _ = read_controls(canvas, ROCKET_ROWS_SPEED, ROCKET_COLUMNS_SPEED)
+        rocket_nextframe_min_row = rocket_row + rows_speed
+        rocket_nextframe_max_row = rocket_row + rows_speed + rocket_frame_rows
+        rocket_nextframe_min_column = rocket_column + columns_speed
+        rocket_nextframe_max_column = rocket_column + columns_speed + rocket_frame_columns
+        if (
+            canvas_min_row + 1 <= rocket_nextframe_min_row
+            and rocket_nextframe_max_row <= canvas_max_row - 1
+            and canvas_min_column + 1 <= rocket_nextframe_min_column
+            and rocket_nextframe_max_column <= canvas_max_column - 1
+        ):
+            rocket_row += rows_speed
+            rocket_column += columns_speed
 
 
-def draw(canvas) -> None:
+def draw(canvas):
     curses.curs_set(False)
     canvas.border()
     canvas.nodelay(True)
@@ -107,15 +88,14 @@ def draw(canvas) -> None:
     with open('./animations/rocket_frame_2.txt') as file:
         rocket_frame_2 = file.read()
 
-    rows, columns = canvas.getmaxyx()
+    canvas_rows, canvas_columns = canvas.getmaxyx()
     rocket_frames = [rocket_frame_1, rocket_frame_2]
 
-    animate_stars_coroutines = animate_stars(canvas, rows, columns, STAR_SYMBOLS)
+    animate_stars_coroutines = animate_stars(canvas, canvas_rows, canvas_columns, STAR_SYMBOLS)
     coroutines = [
         *animate_stars_coroutines,
-        animate_spaceship(canvas, rows//2, columns//2, rocket_frames),
+        animate_spaceship(canvas, canvas_rows//2, canvas_columns//2, rocket_frames),
     ]
-
     while True:
         for coroutine in coroutines.copy():
             try:
