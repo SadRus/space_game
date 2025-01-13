@@ -11,12 +11,16 @@ ROCKET_COLUMNS_SPEED = 1
 STARS_COUNT_MIN = 80
 STARS_COUNT_MAX = 130
 STAR_SYMBOLS = '+*.:'
+STARS_BORDER_OFFSET = 3
 TIC_TIMEOUT = 0.1
+STARS_BLINK_TIC_OFFSET = (5, 15)
+SPACESHIP_ANIMATION_TIC_OFFSET = 2
+BORDER_OFFSET = 1
 
 
-async def blink(canvas, row, column, symbol):
+async def blink(canvas, row, column, symbol, tic_offset):
     while True:
-        for _ in range(random.randint(5, 15)):
+        for _ in range(tic_offset):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_DIM)
@@ -39,11 +43,13 @@ async def blink(canvas, row, column, symbol):
 def animate_stars(canvas, rows, columns, star_symbols):
     coroutines = []
     for _ in range(random.randint(STARS_COUNT_MIN, STARS_COUNT_MAX)):
+        tic_offset = random.randint(*STARS_BLINK_TIC_OFFSET)
         coroutines.append(blink(
             canvas,
-            row=random.randint(5, rows - 5),
-            column=random.randint(5, columns - 5),
+            row=random.randint(STARS_BORDER_OFFSET, rows - STARS_BORDER_OFFSET),
+            column=random.randint(STARS_BORDER_OFFSET, columns - STARS_BORDER_OFFSET),
             symbol=random.choice(star_symbols),
+            tic_offset=tic_offset,
         ))
     return coroutines
 
@@ -57,24 +63,23 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
 
     rows_speed = columns_speed = 0
     for rocket_frame in cycle(rocket_frames):
-        draw_frame(canvas, round(rocket_row), round(rocket_column), rocket_frame)
-        for _ in range(2):
-            await asyncio.sleep(0)
-        draw_frame(canvas, round(rocket_row), round(rocket_column), rocket_frame, negative=True)
-
-        rows_speed, columns_speed, _ = read_controls(canvas, ROCKET_ROWS_SPEED, ROCKET_COLUMNS_SPEED)
-        rocket_nextframe_min_row = rocket_row + rows_speed
-        rocket_nextframe_max_row = rocket_row + rows_speed + rocket_frame_rows
-        rocket_nextframe_min_column = rocket_column + columns_speed
-        rocket_nextframe_max_column = rocket_column + columns_speed + rocket_frame_columns
-        if (
-            canvas_min_row + 1 <= rocket_nextframe_min_row
-            and rocket_nextframe_max_row <= canvas_max_row - 1
-            and canvas_min_column + 1 <= rocket_nextframe_min_column
-            and rocket_nextframe_max_column <= canvas_max_column - 1
-        ):
+        for _ in range(SPACESHIP_ANIMATION_TIC_OFFSET):
+            rows_speed, columns_speed, _ = read_controls(canvas, ROCKET_ROWS_SPEED, ROCKET_COLUMNS_SPEED)
             rocket_row += rows_speed
             rocket_column += columns_speed
+            rocket_row = min(
+                max(canvas_min_row + BORDER_OFFSET, rocket_row),
+                canvas_max_row - rocket_frame_rows - BORDER_OFFSET,
+            )
+            rocket_column = min(
+                max(canvas_min_column + BORDER_OFFSET, rocket_column),
+                canvas_max_column - rocket_frame_columns - BORDER_OFFSET,
+            )
+
+            draw_frame(canvas, round(rocket_row), round(rocket_column), rocket_frame)
+            await asyncio.sleep(0)
+            draw_frame(canvas, round(rocket_row), round(rocket_column), rocket_frame, negative=True)
+
 
 
 def draw(canvas):
