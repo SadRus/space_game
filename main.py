@@ -22,6 +22,11 @@ BORDER_OFFSET = 1
 _coroutines = []
 
 
+async def sleep(tics=1):
+    for _ in range(tics):
+        await asyncio.sleep(0)
+
+
 def get_frames():
     with open('./animations/rocket_frame_1.txt') as file:
         rocket_frame_1 = file.read()
@@ -55,24 +60,19 @@ def get_frames():
 
 async def blink(canvas, row, column, symbol, tic_offset):
     while True:
-        for _ in range(tic_offset):
-            await asyncio.sleep(0)
+        await sleep(tic_offset)
 
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(20):
-            await asyncio.sleep(0)
+        await sleep(20)
 
         canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        await sleep(3)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for _ in range(5):
-            await asyncio.sleep(0)
+        await sleep(5)
 
         canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        await sleep(3)
 
 
 def animate_stars(canvas, rows, columns, star_symbols):
@@ -116,14 +116,13 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
 
 async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
     while True:
-        tic_offset = random.randint(*GARBAGE_TIC_OFFSET)
         garbage_frame = random.choice(garbage_frames)
         garbage_column = random.randint(BORDER_OFFSET, columns)
         _coroutines.append(
             fly_garbage(canvas, garbage_column, garbage_frame)
         )
-        for _ in range(tic_offset):
-            await asyncio.sleep(0)
+        tic_offset = random.randint(*GARBAGE_TIC_OFFSET)
+        await sleep(tic_offset)
 
 
 def draw(canvas):
