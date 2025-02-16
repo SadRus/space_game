@@ -5,6 +5,7 @@ import time
 from itertools import cycle
 
 from curses_tools import draw_frame, get_frame_size, read_controls
+from physic import update_speed
 from space_garbage import fly_garbage
 
 ROCKET_ROWS_SPEED = 1
@@ -96,11 +97,18 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
     rows_speed = columns_speed = 0
     for rocket_frame in cycle(rocket_frames):
         for _ in range(SPACESHIP_ANIMATION_TIC_OFFSET):
-            rows_speed, columns_speed, _ = read_controls(
+            rows_direction, columns_direction, _ = read_controls(
                 canvas,
                 ROCKET_ROWS_SPEED,
                 ROCKET_COLUMNS_SPEED,
             )
+            rows_speed, columns_speed = update_speed(
+                rows_speed,
+                columns_speed,
+                rows_direction,
+                columns_direction,
+            )
+
             rocket_row += rows_speed
             rocket_column += columns_speed
 
