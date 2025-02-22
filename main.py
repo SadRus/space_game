@@ -5,6 +5,7 @@ import time
 from itertools import cycle
 
 from curses_tools import draw_frame, get_frame_size, read_controls
+from fire_animation import fire
 from physic import update_speed
 from space_garbage import fly_garbage
 
@@ -21,6 +22,7 @@ GARBAGE_TIC_OFFSET = (10, 20)
 BORDER_OFFSET = 1
 
 _coroutines = []
+_obstacles = []
 
 
 async def sleep(tics=1):
@@ -97,7 +99,7 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
     rows_speed = columns_speed = 0
     for rocket_frame in cycle(rocket_frames):
         for _ in range(SPACESHIP_ANIMATION_TIC_OFFSET):
-            rows_direction, columns_direction, _ = read_controls(
+            rows_direction, columns_direction, space_pressed = read_controls(
                 canvas,
                 ROCKET_ROWS_SPEED,
                 ROCKET_COLUMNS_SPEED,
@@ -111,6 +113,11 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
 
             rocket_row += rows_speed
             rocket_column += columns_speed
+
+            if space_pressed:
+                _coroutines.append(fire(
+                    canvas, rocket_row, rocket_column + rocket_frame_columns//2
+                ))
 
             rocket_row = max(rocket_row, BORDER_OFFSET)
             rocket_row = min(rocket_row, canvas_rows - rocket_frame_rows - BORDER_OFFSET)
