@@ -6,8 +6,9 @@ from itertools import cycle
 
 from curses_tools import draw_frame, get_frame_size, read_controls
 from fire_animation import fire
+from obstacles import show_obstacles
 from physic import update_speed
-from space_garbage import fly_garbage
+from space_garbage import fly_garbage, _obstacles
 
 ROCKET_ROWS_SPEED = 1
 ROCKET_COLUMNS_SPEED = 1
@@ -22,7 +23,6 @@ GARBAGE_TIC_OFFSET = (10, 20)
 BORDER_OFFSET = 1
 
 _coroutines = []
-_obstacles = []
 
 
 async def sleep(tics=1):
@@ -115,9 +115,9 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
             rocket_column += columns_speed
 
             if space_pressed:
-                _coroutines.append(fire(
-                    canvas, rocket_row, rocket_column + rocket_frame_columns//2
-                ))
+                _coroutines.append(
+                    fire(canvas, rocket_row, rocket_column + rocket_frame_columns//2),
+                )
 
             rocket_row = max(rocket_row, BORDER_OFFSET)
             rocket_row = min(rocket_row, canvas_rows - rocket_frame_rows - BORDER_OFFSET)
@@ -133,10 +133,12 @@ async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
     while True:
         garbage_frame = random.choice(garbage_frames)
         garbage_column = random.randint(BORDER_OFFSET, columns)
-        _coroutines.append(
-            fly_garbage(canvas, garbage_column, garbage_frame)
-        )
+
         tic_offset = random.randint(*GARBAGE_TIC_OFFSET)
+        _coroutines.extend([
+            fly_garbage(canvas, garbage_column, garbage_frame),
+            show_obstacles(canvas, _obstacles),
+        ])
         await sleep(tic_offset)
 
 
