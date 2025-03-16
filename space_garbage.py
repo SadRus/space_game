@@ -3,7 +3,7 @@ import asyncio
 from curses_tools import draw_frame, get_frame_size
 from obstacles import Obstacle
 
-_obstacles = []
+obstacles = []
 
 
 async def fly_garbage(canvas, column, garbage_frame, speed=1):
@@ -24,7 +24,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=1):
         rows_size=frame_rows,
         columns_size=frame_columns,
     )
-    _obstacles.append(obstacle)
+    obstacles.append(obstacle)
 
     while row < rows_number:
         draw_frame(canvas, row, column, garbage_frame)

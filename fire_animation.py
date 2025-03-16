@@ -1,6 +1,8 @@
 import asyncio
 import curses
 
+from space_garbage import obstacles
+
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
     """Display animation of gun shot, direction and speed can be specified."""
@@ -30,3 +32,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
         column += columns_speed
+
+        for obstacle in obstacles:
+            if obstacle.has_collision(row, column):
+                return None

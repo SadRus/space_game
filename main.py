@@ -8,7 +8,7 @@ from curses_tools import draw_frame, get_frame_size, read_controls
 from fire_animation import fire
 from obstacles import show_obstacles
 from physic import update_speed
-from space_garbage import fly_garbage, _obstacles
+from space_garbage import fly_garbage, obstacles
 
 ROCKET_ROWS_SPEED = 1
 ROCKET_COLUMNS_SPEED = 1
@@ -78,7 +78,7 @@ async def blink(canvas, row, column, symbol, tic_offset):
         await sleep(3)
 
 
-def animate_stars(canvas, rows, columns, star_symbols):
+async def animate_stars(canvas, rows, columns, star_symbols):
     for _ in range(random.randint(STARS_COUNT_MIN, STARS_COUNT_MAX)):
         tic_offset = random.randint(*TIC_OFFSET)
         _coroutines.append(blink(
@@ -137,7 +137,7 @@ async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
         tic_offset = random.randint(*GARBAGE_TIC_OFFSET)
         _coroutines.extend([
             fly_garbage(canvas, garbage_column, garbage_frame),
-            show_obstacles(canvas, _obstacles),
+            show_obstacles(canvas, obstacles),
         ])
         await sleep(tic_offset)
 
@@ -151,8 +151,8 @@ def draw(canvas):
     rocket_frames = frames.get("rocket_frames")
     garbage_frames = frames.get("garbage_frames")
 
-    animate_stars(canvas, canvas_rows, canvas_columns, STAR_SYMBOLS)
     _coroutines.extend([
+        animate_stars(canvas, canvas_rows, canvas_columns, STAR_SYMBOLS),
         animate_spaceship(canvas, canvas_rows//2, canvas_columns//2, rocket_frames),
         fill_orbit_with_garbage(canvas, canvas_columns, garbage_frames),
     ])
