@@ -5,10 +5,10 @@ import time
 from itertools import cycle
 
 from curses_tools import draw_frame, get_frame_size, read_controls
-from fire_animation import fire
-from obstacles import show_obstacles
+from fire_animation import fire, obstacles_in_last_collisions
+from obstacles import show_obstacles, obstacles
 from physic import update_speed
-from space_garbage import fly_garbage, obstacles
+from space_garbage import fly_garbage
 
 ROCKET_ROWS_SPEED = 1
 ROCKET_COLUMNS_SPEED = 1
@@ -138,6 +138,7 @@ async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
         _coroutines.extend([
             fly_garbage(canvas, garbage_column, garbage_frame),
             show_obstacles(canvas, obstacles),
+            show_obstacles(canvas, obstacles_in_last_collisions),
         ])
         await sleep(tic_offset)
 

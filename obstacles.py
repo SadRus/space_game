@@ -1,6 +1,9 @@
 import asyncio
 from curses_tools import draw_frame
 
+obstacles = []
+obstacles_in_last_collisions = []
+
 
 class Obstacle:
 

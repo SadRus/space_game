@@ -1,9 +1,8 @@
 import asyncio
 
 from curses_tools import draw_frame, get_frame_size
-from obstacles import Obstacle
-
-obstacles = []
+from fire_animation import obstacles_in_last_collisions
+from obstacles import Obstacle, obstacles
 
 
 async def fly_garbage(canvas, column, garbage_frame, speed=1):
@@ -33,3 +32,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=1):
 
         row += speed
         obstacle.row += speed
+
+        if obstacle in obstacles_in_last_collisions:
+            obstacles_in_last_collisions.remove(obstacle)
+            return None
