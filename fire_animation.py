@@ -1,6 +1,7 @@
 import asyncio
 import curses
 
+from explosion import explode
 from obstacles import obstacles, obstacles_in_last_collisions
 
 
@@ -37,4 +38,9 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
             if obstacle.has_collision(row, column):
                 obstacles_in_last_collisions.append(obstacle)
                 obstacles.remove(obstacle)
+                await explode(
+                    canvas,
+                    obstacle.row + obstacle.rows_size // 2,
+                    obstacle.column + obstacle.columns_size // 2,
+                )
                 return None

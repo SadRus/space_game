@@ -137,8 +137,6 @@ async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
         tic_offset = random.randint(*GARBAGE_TIC_OFFSET)
         _coroutines.extend([
             fly_garbage(canvas, garbage_column, garbage_frame),
-            show_obstacles(canvas, obstacles),
-            show_obstacles(canvas, obstacles_in_last_collisions),
         ])
         await sleep(tic_offset)
 
