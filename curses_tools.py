@@ -1,3 +1,5 @@
+import asyncio
+
 SPACE_KEY_CODE = 32
 LEFT_KEY_CODE = 260
 RIGHT_KEY_CODE = 261
@@ -75,3 +77,10 @@ def get_frame_size(text):
     rows = len(lines)
     columns = max([len(line) for line in lines])
     return rows, columns
+
+
+async def show_gameover(canvas, frame):
+    while True:
+        canvas_rows, canvas_columns = canvas.getmaxyx()
+        draw_frame(canvas, canvas_rows//3, canvas_columns//4, text=frame)
+        await asyncio.sleep(0)

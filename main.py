@@ -4,9 +4,9 @@ import random
 import time
 from itertools import cycle
 
-from curses_tools import draw_frame, get_frame_size, read_controls
-from fire_animation import fire, obstacles_in_last_collisions
-from obstacles import show_obstacles, obstacles
+from curses_tools import draw_frame, get_frame_size, read_controls, show_gameover
+from fire_animation import fire
+from obstacles import obstacles
 from physic import update_speed
 from space_garbage import fly_garbage
 
@@ -21,6 +21,7 @@ TIC_OFFSET = (5, 25)
 SPACESHIP_ANIMATION_TIC_OFFSET = 2
 GARBAGE_TIC_OFFSET = (10, 20)
 BORDER_OFFSET = 1
+YEAR = 1957
 
 _coroutines = []
 
@@ -56,8 +57,18 @@ def get_frames():
         trash_xl = file.read()
 
     return {
-        "rocket_frames": [rocket_frame_1, rocket_frame_2],
-        "garbage_frames": [duck_frame, hubble_frame, lamp_frame, trash_large, trash_small, trash_xl],
+        'rocket_frames': [
+            rocket_frame_1,
+            rocket_frame_2,
+        ],
+        'garbage_frames': [
+            duck_frame,
+            hubble_frame,
+            lamp_frame,
+            trash_large,
+            trash_small,
+            trash_xl,
+        ],
     }
 
 
@@ -95,8 +106,8 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
 
     rocket_row, rocket_column = start_row, start_column
     rocket_frame_rows, rocket_frame_columns = get_frame_size(rocket_frames[0])
-
     rows_speed = columns_speed = 0
+
     for rocket_frame in cycle(rocket_frames):
         for _ in range(SPACESHIP_ANIMATION_TIC_OFFSET):
             rows_direction, columns_direction, space_pressed = read_controls(
@@ -128,6 +139,12 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
             await asyncio.sleep(0)
             draw_frame(canvas, round(rocket_row), round(rocket_column), rocket_frame, negative=True)
 
+            for obstacle in obstacles:
+                if obstacle.has_collision(rocket_row, rocket_column):
+                    with open('./animations/game_over.txt') as file:
+                        text_frame = file.read()
+                    await show_gameover(canvas, text_frame)
+
 
 async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
     while True:
@@ -147,8 +164,8 @@ def draw(canvas):
     canvas_rows, canvas_columns = canvas.getmaxyx()
 
     frames = get_frames()
-    rocket_frames = frames.get("rocket_frames")
-    garbage_frames = frames.get("garbage_frames")
+    rocket_frames = frames.get('rocket_frames')
+    garbage_frames = frames.get('garbage_frames')
 
     _coroutines.extend([
         animate_stars(canvas, canvas_rows, canvas_columns, STAR_SYMBOLS),
