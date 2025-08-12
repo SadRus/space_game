@@ -2,13 +2,28 @@ import asyncio
 import curses
 import random
 import time
+
 from itertools import cycle
 
-from curses_tools import draw_frame, get_frame_size, read_controls, show_gameover
+from contextvars import ContextVar
+from curses_tools import (
+    draw_frame,
+    get_frame_size,
+    read_controls,
+    show_gameover,
+)
 from fire_animation import fire
+from game_scenario import get_garbage_delay_tics
 from obstacles import obstacles
 from physic import update_speed
 from space_garbage import fly_garbage
+from utils import (
+    blink,
+    display_statistics,
+    get_frames,
+    sleep,
+    uplevel_hard,
+)
 
 ROCKET_ROWS_SPEED = 1
 ROCKET_COLUMNS_SPEED = 1
@@ -19,74 +34,11 @@ STARS_BORDER_OFFSET = 3
 TIC_TIMEOUT = 0.1
 TIC_OFFSET = (5, 25)
 SPACESHIP_ANIMATION_TIC_OFFSET = 2
-GARBAGE_TIC_OFFSET = (10, 20)
+YEAR = ContextVar('YEAR', default=1957)
+
 BORDER_OFFSET = 1
-YEAR = 1957
 
 _coroutines = []
-
-
-async def sleep(tics=1):
-    for _ in range(tics):
-        await asyncio.sleep(0)
-
-
-def get_frames():
-    with open('./animations/rocket_frame_1.txt') as file:
-        rocket_frame_1 = file.read()
-
-    with open('./animations/rocket_frame_2.txt') as file:
-        rocket_frame_2 = file.read()
-
-    with open('./animations/duck.txt') as file:
-        duck_frame = file.read()
-
-    with open('./animations/hubble.txt') as file:
-        hubble_frame = file.read()
-
-    with open('./animations/lamp.txt') as file:
-        lamp_frame = file.read()
-
-    with open('./animations/trash_large.txt') as file:
-        trash_large = file.read()
-
-    with open('./animations/trash_small.txt') as file:
-        trash_small = file.read()
-
-    with open('./animations/trash_xl.txt') as file:
-        trash_xl = file.read()
-
-    return {
-        'rocket_frames': [
-            rocket_frame_1,
-            rocket_frame_2,
-        ],
-        'garbage_frames': [
-            duck_frame,
-            hubble_frame,
-            lamp_frame,
-            trash_large,
-            trash_small,
-            trash_xl,
-        ],
-    }
-
-
-async def blink(canvas, row, column, symbol, tic_offset):
-    while True:
-        await sleep(tic_offset)
-
-        canvas.addstr(row, column, symbol, curses.A_DIM)
-        await sleep(20)
-
-        canvas.addstr(row, column, symbol)
-        await sleep(3)
-
-        canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await sleep(5)
-
-        canvas.addstr(row, column, symbol)
-        await sleep(3)
 
 
 async def animate_stars(canvas, rows, columns, star_symbols):
@@ -101,10 +53,10 @@ async def animate_stars(canvas, rows, columns, star_symbols):
         ))
 
 
-async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
+async def animate_spaceship(canvas, start_row, rocket_start_column, rocket_frames):
     canvas_rows, canvas_columns = canvas.getmaxyx()
 
-    rocket_row, rocket_column = start_row, start_column
+    rocket_row, rocket_column = start_row, rocket_start_column
     rocket_frame_rows, rocket_frame_columns = get_frame_size(rocket_frames[0])
     rows_speed = columns_speed = 0
 
@@ -126,8 +78,9 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
             rocket_column += columns_speed
 
             if space_pressed:
+                rocket_start_column = rocket_column + rocket_frame_columns // 2
                 _coroutines.append(
-                    fire(canvas, rocket_row, rocket_column + rocket_frame_columns//2),
+                    fire(canvas, start_row=rocket_row, start_column=rocket_start_column),
                 )
 
             rocket_row = max(rocket_row, BORDER_OFFSET)
@@ -148,14 +101,18 @@ async def animate_spaceship(canvas, start_row, start_column, rocket_frames):
 
 async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
     while True:
-        garbage_frame = random.choice(garbage_frames)
-        garbage_column = random.randint(BORDER_OFFSET, columns)
+        current_year = YEAR.get()
+        tic_offset = get_garbage_delay_tics(current_year)
 
-        tic_offset = random.randint(*GARBAGE_TIC_OFFSET)
-        _coroutines.extend([
-            fly_garbage(canvas, garbage_column, garbage_frame),
-        ])
-        await sleep(tic_offset)
+        if tic_offset is None:
+            await sleep(0)
+        else:
+            garbage_frame = random.choice(garbage_frames)
+            garbage_column = random.randint(BORDER_OFFSET, columns)
+            _coroutines.extend([
+                fly_garbage(canvas, garbage_column, garbage_frame),
+            ])
+            await sleep(tic_offset)
 
 
 def draw(canvas):
@@ -166,8 +123,9 @@ def draw(canvas):
     frames = get_frames()
     rocket_frames = frames.get('rocket_frames')
     garbage_frames = frames.get('garbage_frames')
-
     _coroutines.extend([
+        uplevel_hard(YEAR),
+        display_statistics(canvas, YEAR),
         animate_stars(canvas, canvas_rows, canvas_columns, STAR_SYMBOLS),
         animate_spaceship(canvas, canvas_rows//2, canvas_columns//2, rocket_frames),
         fill_orbit_with_garbage(canvas, canvas_columns, garbage_frames),
@@ -183,7 +141,7 @@ def draw(canvas):
         canvas.refresh()
         canvas.border()
         time.sleep(TIC_TIMEOUT)
-        if len(_coroutines) == 0:
+        if not _coroutines:
             break
 
 
