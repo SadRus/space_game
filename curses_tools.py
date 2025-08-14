@@ -79,7 +79,7 @@ def get_frame_size(text):
     return rows, columns
 
 
-async def show_gameover(canvas, frame):
+async def show_gameover_label(canvas, frame):
     while True:
         canvas_rows, canvas_columns = canvas.getmaxyx()
         draw_frame(canvas, canvas_rows//3, canvas_columns//4, text=frame)

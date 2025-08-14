@@ -69,22 +69,18 @@ async def blink(canvas, row, column, symbol, tic_offset):
         await sleep(3)
 
 
-async def display_statistics(canvas, ctx_year):
-    canvas_rows, canvas_columns = canvas.getmaxyx()
-    subwindow = canvas.derwin(3, canvas_columns, canvas_rows - 3, 0)
-
+async def draw_statistics(canvas, ctx_year):
     while True:
         current_year = ctx_year.get()
-        subwindow.addstr(1, 1, f'Year: {str(current_year)}', curses.A_BOLD)
-        year_achievement_phrase = PHRASES.get(current_year, "")
-        if year_achievement_phrase:
-            subwindow.addstr(1, 15, year_achievement_phrase, curses.A_BOLD)
-        subwindow.refresh()
+        canvas.addstr(1, 1, f'Year: {str(current_year)}', curses.A_BOLD)
+        year_achievement_phrase = PHRASES.get(current_year, '')
+
+        canvas.addstr(1, 15, year_achievement_phrase, curses.A_BOLD)
         await sleep(15)
-        subwindow.addstr(1, 15, " " * len(year_achievement_phrase), curses.A_BOLD)
+        canvas.addstr(1, 15, ' ' * len(year_achievement_phrase), curses.A_BOLD)
 
 
-async def uplevel_hard(ctx_year):
+async def calculate_year(ctx_year):
     while True:
         await sleep(15)
         current_year = ctx_year.get()
