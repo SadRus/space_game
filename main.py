@@ -38,7 +38,9 @@ STARS_BORDER_OFFSET = 3
 TIC_TIMEOUT = 0.1
 TIC_OFFSET = (5, 25)
 STATISTIC_CANVAS_ROWS = 3
+
 YEAR = ContextVar('YEAR', default=1957)
+WEAPON_UPDATE_YEAR = 2020
 
 _coroutines = []
 
@@ -61,6 +63,7 @@ async def animate_rocket(canvas, start_row, rocket_start_column, rocket_frames):
     rocket_frame_rows, rocket_frame_columns = get_frame_size(rocket_frames[0])
     rows_speed = columns_speed = 0
 
+    current_year = YEAR.get()
     for rocket_frame in cycle(rocket_frames):
         for _ in range(ROCKET_ANIMATION_TIC_OFFSET):
             rows_direction, columns_direction, space_pressed = read_controls(
@@ -78,7 +81,7 @@ async def animate_rocket(canvas, start_row, rocket_start_column, rocket_frames):
             rocket_row += rows_speed
             rocket_column += columns_speed
 
-            if space_pressed:
+            if space_pressed and current_year >= WEAPON_UPDATE_YEAR:
                 rocket_start_column = rocket_column + rocket_frame_columns // 2
                 _coroutines.append(
                     fire(canvas, start_row=rocket_row, start_column=rocket_start_column),
