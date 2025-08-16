@@ -1,6 +1,7 @@
 import asyncio
 import curses
 
+from curses_tools import draw_frame, get_frame_size
 from game_scenario import PHRASES
 
 
@@ -46,8 +47,9 @@ def get_frames():
 
 
 async def sleep(tics=1):
-    if not tics:
+    if tics == 0:
         await asyncio.sleep(0)
+
     for _ in range(tics):
         await asyncio.sleep(0)
 
@@ -86,3 +88,18 @@ async def calculate_year(ctx_year):
         current_year = ctx_year.get()
         next_year = current_year + 1
         ctx_year.set(next_year)
+
+
+async def draw_gameover_label(canvas):
+    canvas_rows, canvas_columns = canvas.getmaxyx()
+    with open('./animations/game_over.txt') as file:
+        gameover_frame = file.read()
+    frame_rows, frame_columns = get_frame_size(gameover_frame)
+    while True:
+        draw_frame(
+            canvas,
+            canvas_rows//2 - frame_rows//2,
+            canvas_columns//2 - frame_columns//2,
+            text=gameover_frame,
+        )
+        await asyncio.sleep(0)

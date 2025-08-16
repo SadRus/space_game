@@ -10,15 +10,15 @@ from curses_tools import (
     draw_frame,
     get_frame_size,
     read_controls,
-    show_gameover_label,
 )
 from fire_animation import fire
 from game_scenario import get_garbage_delay_tics
 from obstacles import obstacles
-from physic import update_speed
+from physics import update_speed
 from space_garbage import fly_garbage
 from utils import (
     blink,
+    draw_gameover_label,
     draw_statistics,
     get_frames,
     sleep,
@@ -34,9 +34,9 @@ STARS_COUNT_MIN = 80
 STARS_COUNT_MAX = 130
 STAR_SYMBOLS = '+*.:'
 STARS_BORDER_OFFSET = 3
+STARS_TIC_OFFSET = (5, 25)
 
 TIC_TIMEOUT = 0.1
-TIC_OFFSET = (5, 25)
 STATISTIC_CANVAS_ROWS = 3
 
 YEAR = ContextVar('YEAR', default=1957)
@@ -47,7 +47,7 @@ _coroutines = []
 
 async def animate_stars(canvas, rows, columns, star_symbols):
     for _ in range(random.randint(STARS_COUNT_MIN, STARS_COUNT_MAX)):
-        tic_offset = random.randint(*TIC_OFFSET)
+        tic_offset = random.randint(*STARS_TIC_OFFSET)
         _coroutines.append(blink(
             canvas,
             row=random.randint(STARS_BORDER_OFFSET, rows - STARS_BORDER_OFFSET),
@@ -63,8 +63,8 @@ async def animate_rocket(canvas, start_row, rocket_start_column, rocket_frames):
     rocket_frame_rows, rocket_frame_columns = get_frame_size(rocket_frames[0])
     rows_speed = columns_speed = 0
 
-    current_year = YEAR.get()
     for rocket_frame in cycle(rocket_frames):
+        current_year = YEAR.get()
         for _ in range(ROCKET_ANIMATION_TIC_OFFSET):
             rows_direction, columns_direction, space_pressed = read_controls(
                 canvas,
@@ -98,9 +98,7 @@ async def animate_rocket(canvas, start_row, rocket_start_column, rocket_frames):
 
             for obstacle in obstacles:
                 if obstacle.has_collision(rocket_row, rocket_column):
-                    with open('./animations/game_over.txt') as file:
-                        text_frame = file.read()
-                    await show_gameover_label(canvas, text_frame)
+                    await draw_gameover_label(canvas)
 
 
 async def fill_orbit_with_garbage(canvas, columns, garbage_frames):
@@ -130,14 +128,14 @@ def draw(canvas):
         0,
     )
 
-    frames = get_frames()
-    rocket_frames = frames.get('rocket_frames')
-    garbage_frames = frames.get('garbage_frames')
+    animation_frames = get_frames()
+    rocket_frames = animation_frames.get('rocket_frames')
+    garbage_frames = animation_frames.get('garbage_frames')
     _coroutines.extend([
         calculate_year(YEAR),
         draw_statistics(statistic_canvas, YEAR),
         animate_stars(canvas, canvas_rows, canvas_columns, STAR_SYMBOLS),
-        animate_rocket(canvas, canvas_rows // 2, canvas_columns // 2, rocket_frames),
+        animate_rocket(canvas, canvas_rows / 2, canvas_columns / 2, rocket_frames),
         fill_orbit_with_garbage(canvas, canvas_columns, garbage_frames),
     ])
 

@@ -23,6 +23,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=1):
         rows_size=frame_rows,
         columns_size=frame_columns,
     )
+
     obstacles.append(obstacle)
 
     while row < rows_number:
@@ -36,3 +37,5 @@ async def fly_garbage(canvas, column, garbage_frame, speed=1):
         if obstacle in obstacles_in_last_collisions:
             obstacles_in_last_collisions.remove(obstacle)
             return None
+
+    obstacles.remove(obstacle)
